@@ -25,11 +25,15 @@ class SearchHandlerAgent(AgentClient):
             tools=[summary_web]
         ).create_agent()
 
-    def run(self, query: str):
+    async def run(self, query: str):
         """Run the search handler agent with the provided query."""
-        search_results = self.agent_search.run(query)
-        if not search_results or not search_results.output:
-            return "Không tìm thấy thông tin liên quan đến câu hỏi của bạn."
-        prompt = f"Nội dung cần tìm: {query}\nTóm tắt nội dung của các kết quả tìm kiếm: search_results.output"
-        response = self.agent_summary.run(prompt)
-        return response
+        try:
+            search_results = await self.agent_search.run(query)
+            if not search_results or not hasattr(search_results, 'output') or not search_results.output:
+                return "Không tìm thấy thông tin liên quan đến câu hỏi của bạn."
+            
+            prompt = f"Nội dung cần tìm: {query}\nTóm tắt nội dung của các kết quả tìm kiếm: {search_results.output}"
+            response = await self.agent_summary.run(prompt)
+            return str(response.output) if hasattr(response, 'output') else str(response)
+        except Exception as e:
+            return f"Xin lỗi, đã có lỗi xảy ra khi tìm kiếm: {e}"

@@ -34,7 +34,7 @@ class QnAHandlerAgent(AgentClient):
             tools=[faq_tool]
         ).create_agent()
 
-    def run(self, query: str):
+    async def run(self, query: str):
         """Run the QnA handler agent with the provided query."""
-        response = self.agent.run(query)
+        response = await self.agent.run(query)
         return response

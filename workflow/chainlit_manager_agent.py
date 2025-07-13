@@ -4,9 +4,13 @@ This shows how to integrate ManagerAgent with a web chat interface.
 """
 
 import chainlit as cl
-from ManagerAgent import ManagerAgent
-import uuid
+import sys
 import os
+# Add the project root to Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from workflow.ManagerAgent import ManagerAgent
+import uuid
 from dotenv import load_dotenv
 from typing import Union
 

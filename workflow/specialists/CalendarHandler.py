@@ -19,7 +19,7 @@ class CalendarHandlerAgent(AgentClient):
             tools=[read_file_tool] 
         ).create_agent()
 
-    def run(self, query: str):
+    async def run(self, query: str):
         """Run the Calendar Handler agent with the provided query."""
-        response = self.agent.run(query)
+        response = await self.agent.run(query)
         return response

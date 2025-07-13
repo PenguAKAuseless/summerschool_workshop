@@ -13,10 +13,10 @@ from pydantic_ai.providers.google_gla import GoogleGLAProvider
 
 from data.cache.redis_cache import ShortTermMemory
 from llm.base import AgentClient
-from specialists.QnAHandler import QnAHandlerAgent
-from specialists.SearchHandler import SearchHandlerAgent
-from specialists.CalendarHandler import CalendarHandlerAgent
-from specialists.TicketHandler import TicketHandlerAgent
+from workflow.specialists.QnAHandler import QnAHandlerAgent
+from workflow.specialists.SearchHandler import SearchHandlerAgent
+from workflow.specialists.CalendarHandler import CalendarHandlerAgent
+from workflow.specialists.TicketHandler import TicketHandlerAgent
 
 
 class TaskType(Enum):
@@ -235,7 +235,7 @@ class ManagerAgent:
         
         return "\n".join(context_lines)
     
-    def classify_task(self, user_message: str, chat_history: List[ChatMessage]) -> TaskClassification:
+    async def classify_task(self, user_message: str, chat_history: List[ChatMessage]) -> TaskClassification:
         """
         Classify the user's task based on their message and chat history.
         
@@ -260,11 +260,11 @@ class ManagerAgent:
             """
             
             # Get classification from agent
-            response = self.classification_agent.run(classification_query)
+            response = await self.classification_agent.run(classification_query)
             
             # Parse response to extract classification
             # This is a simplified parsing - in practice, you might want more robust parsing
-            response_text = str(response).lower()
+            response_text = str(response.output if hasattr(response, 'output') else response).lower()
             
             # Determine task type based on keywords in response
             if any(keyword in response_text for keyword in ['qna', 'faq', 'quy định', 'chính sách', 'vnu', 'hcmut', 'trường']):
@@ -298,7 +298,7 @@ class ManagerAgent:
                 reasoning=f"Error in classification: {e}"
             )
     
-    def route_to_specialist(
+    async def route_to_specialist(
         self,
         task_type: TaskType,
         user_message: str,
@@ -321,32 +321,32 @@ class ManagerAgent:
             enhanced_query = f"{history_context}\n\nCâu hỏi hiện tại: {user_message}"
             
             if task_type == TaskType.QNA and self.qna_agent is not None:
-                response = self.qna_agent.run(enhanced_query)
-                return str(response)
+                response = await self.qna_agent.run(enhanced_query)
+                return str(response.output) if hasattr(response, 'output') else str(response)
             
             elif task_type == TaskType.SEARCH and self.search_agent is not None:
-                response = self.search_agent.run(enhanced_query)
-                return str(response)
+                response = await self.search_agent.run(enhanced_query)
+                return str(response)  # SearchHandler returns a string directly
             
             elif task_type == TaskType.CALENDAR and self.calendar_agent is not None:
-                response = self.calendar_agent.run(enhanced_query)
-                return str(response)
+                response = await self.calendar_agent.run(enhanced_query)
+                return str(response.output) if hasattr(response, 'output') else str(response)
             
             elif task_type == TaskType.TICKET and self.ticket_agent is not None:
-                response = self.ticket_agent.run(enhanced_query)
-                return str(response)
+                response = await self.ticket_agent.run(enhanced_query)
+                return str(response.output) if hasattr(response, 'output') else str(response)
             
             else:  # GENERAL or fallback when specialist agent is unavailable
                 agent_name = task_type.value if task_type != TaskType.GENERAL else "general"
                 if task_type != TaskType.GENERAL:
                     self.logger.warning(f"{agent_name} agent is not available, falling back to general handler")
-                return self._handle_general_query(user_message, chat_history)
+                return await self._handle_general_query(user_message, chat_history)
                 
         except Exception as e:
             self.logger.error(f"Error routing to specialist: {e}")
             return f"Xin lỗi, đã có lỗi xảy ra khi xử lý yêu cầu của bạn: {e}"
     
-    def _handle_general_query(self, user_message: str, chat_history: List[ChatMessage]) -> str:
+    async def _handle_general_query(self, user_message: str, chat_history: List[ChatMessage]) -> str:
         """Handle general queries that don't fit into specific categories."""
         try:
             # Create a general response agent
@@ -369,8 +369,8 @@ class ManagerAgent:
             history_context = self._format_chat_history_for_context(chat_history)
             enhanced_query = f"{history_context}\n\nTin nhắn: {user_message}"
             
-            response = general_agent.run(enhanced_query)
-            return str(response)
+            response = await general_agent.run(enhanced_query)
+            return str(response.output) if hasattr(response, 'output') else str(response)
             
         except Exception as e:
             self.logger.error(f"Error in general query handling: {e}")
@@ -403,10 +403,10 @@ class ManagerAgent:
             chat_history = self._get_chat_history(user_id)
             
             # Classify the task
-            classification = self.classify_task(user_message, chat_history)
+            classification = await self.classify_task(user_message, chat_history)
             
             # Route to appropriate specialist
-            response = self.route_to_specialist(
+            response = await self.route_to_specialist(
                 classification.task_type,
                 user_message,
                 chat_history
