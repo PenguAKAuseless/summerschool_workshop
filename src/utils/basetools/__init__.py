@@ -76,6 +76,13 @@ from .send_email_tool import (
     create_send_email_tool
 )
 
+# Parse Web Tool
+from .summary_web import (
+    ParseWebInput,
+    ParseWebOutput,
+    summary_web
+)
+
 # Export all for easy import with *
 __all__ = [
     # Calculator Tool
@@ -136,5 +143,10 @@ __all__ = [
     'EmailToolInput',
     'EmailToolOutput',
     'send_email_tool',
-    'create_send_email_tool'
+    'create_send_email_tool',
+
+    # Parse Web Tool
+    'ParseWebInput',
+    'ParseWebOutput',
+    'summary_web'
 ]

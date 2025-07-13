@@ -94,8 +94,8 @@ from utils.basetools import create_send_email_tool, EmailToolInput
 
 # Tạo email tool
 email_tool = create_send_email_tool(
-    to_emails=["admin@company.com", "support@company.com"],
-    sender_email="bot@company.com",
+    to_emails=["admin@hcmut.edu.vn", "support@hcmut.edu.vn"],
+    sender_email="bot@hcmut.edu.vn",
     sender_password="app_password"
 )
 
@@ -456,7 +456,7 @@ from utils.basetools import create_faq_tool, http_tool, create_send_email_tool
 
 # Create multiple tools
 faq_tool = create_faq_tool(collection_name="knowledge_base")
-email_tool = create_send_email_tool(to_emails=["admin@company.com"])
+email_tool = create_send_email_tool(to_emails=["admin@hcmut.edu.vn"])
 weather_tool = weather_tool  # Custom tool from above
 
 # Create agent with multiple tools
@@ -465,7 +465,7 @@ agent = AgentClient(
     system_prompt="""
     You are a comprehensive assistant with access to multiple tools:
     
-    1. faq_tool - Search company knowledge base
+    1. faq_tool - Search university knowledge base
     2. http_tool - Make HTTP requests to external APIs
     3. email_tool - Send notifications via email
     4. weather_tool - Get weather information

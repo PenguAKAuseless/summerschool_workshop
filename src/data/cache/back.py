@@ -9,7 +9,7 @@ from utils.basetools.search_in_file_tool import create_search_in_file_tool
 from utils.basetools.send_email_tool import create_send_email_tool
 from utils.basetools.merge_files_tool import merge_files_tool 
 
-from data.prompts.company4_demo_prompt import SYSTEM_PROMPT
+from data.prompts.demo import SYSTEM_PROMPT
 import chainlit as cl
 from data.cache.memory_handler import MessageMemoryHandler
 

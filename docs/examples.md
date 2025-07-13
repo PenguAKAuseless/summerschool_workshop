@@ -340,21 +340,21 @@ from datetime import datetime, timedelta
 # Index HR policies and procedures
 indexer = MilvusIndexer(
     collection_name="hr_policies",
-    faq_file="src/data/mock_data/HR_FAQ.xlsx"
+    faq_file="src/data/mock_data/VNU_HCMUT_FAQ.xlsx"
 )
 indexer.run()
 
 # Create tools
-hr_faq_tool = create_faq_tool(collection_name="hr_policies")
+student_services_faq_tool = create_faq_tool(collection_name="student_services")
 hr_email_tool = create_send_email_tool(
-    to_emails=["hr@company.com"],
+    to_emails=["student_support@hcmut.edu.vn"],
     sender_email=None,
     sender_password=None
 )
 
 # Custom leave calculation tool
 class LeaveCalculationInput(BaseModel):
-    employee_id: str = Field(..., description="Employee ID")
+    student_id: str = Field(..., description="Student ID")
     leave_type: str = Field(..., description="Type of leave (annual, sick, etc.)")
     start_date: str = Field(..., description="Leave start date (YYYY-MM-DD)")
     end_date: str = Field(..., description="Leave end date (YYYY-MM-DD)")
