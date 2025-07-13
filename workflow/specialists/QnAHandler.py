@@ -13,10 +13,12 @@ from utils.basetools import *
 
 class QnAHandlerAgent(AgentClient):
     def __init__(self, collection_name: str):
-        # Initialize Milvus indexer (run only once to create collection and index data)
-        # Comment this out after first run
-        indexer = MilvusIndexer(collection_name=collection_name, faq_file="src/data/mock_data/VNU_HCMUT_FAQ.xlsx")
-        indexer.run()
+        # Only run indexer if collection doesn't exist
+        from pymilvus import utility
+        if not utility.has_collection(collection_name):
+            # Initialize Milvus indexer (run only once to create collection and index data)
+            indexer = MilvusIndexer(collection_name=collection_name, faq_file="src/data/mock_data/vnu_hcmut_faq.xlsx")
+            indexer.run()
 
         provider = GoogleGLAProvider(api_key=os.getenv("GEMINI_API_KEY"))
         model = GeminiModel('gemini-2.0-flash', provider=provider)

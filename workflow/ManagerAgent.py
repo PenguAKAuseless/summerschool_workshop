@@ -84,6 +84,12 @@ class ManagerAgent:
         
         # Initialize specialist agents
         self.collection_name = collection_name
+        
+        # Setup collection first if needed
+        collection_ready = self.setup_collection()
+        if not collection_ready:
+            self.logger.warning("Collection setup failed, QnA functionality may not be available")
+        
         self._init_specialists()
         
         # Initialize classification agent
@@ -96,8 +102,14 @@ class ManagerAgent:
             
             # Initialize agents with error handling for each
             try:
-                self.qna_agent = QnAHandlerAgent(collection_name=self.collection_name)
-                self.logger.info("QnA agent initialized successfully")
+                # Check if collection exists before initializing QnA agent
+                from pymilvus import utility
+                if not utility.has_collection(self.collection_name):
+                    self.logger.warning(f"Collection '{self.collection_name}' does not exist. QnA agent will not be available.")
+                    self.qna_agent = None
+                else:
+                    self.qna_agent = QnAHandlerAgent(collection_name=self.collection_name)
+                    self.logger.info("QnA agent initialized successfully")
             except Exception as e:
                 self.logger.warning(f"QnA agent initialization failed: {e}")
                 self.qna_agent = None
@@ -497,4 +509,39 @@ class ManagerAgent:
             return True
         except Exception as e:
             self.logger.error(f"Error clearing user history: {e}")
+            return False
+    
+    def setup_collection(self, force_recreate: bool = False) -> bool:
+        """
+        Setup the Milvus collection for QnA functionality.
+        
+        Args:
+            force_recreate: If True, recreate the collection even if it exists
+            
+        Returns:
+            True if collection is successfully setup, False otherwise
+        """
+        try:
+            from data.milvus.indexing import MilvusIndexer
+            from pymilvus import utility
+            
+            if force_recreate and utility.has_collection(self.collection_name):
+                utility.drop_collection(self.collection_name)
+                self.logger.info(f"Dropped existing collection '{self.collection_name}'")
+            
+            if not utility.has_collection(self.collection_name):
+                self.logger.info(f"Creating collection '{self.collection_name}'...")
+                indexer = MilvusIndexer(
+                    collection_name=self.collection_name,
+                    faq_file="src/data/mock_data/vnu_hcmut_faq.xlsx"
+                )
+                indexer.run()
+                self.logger.info(f"Collection '{self.collection_name}' created successfully")
+                return True
+            else:
+                self.logger.info(f"Collection '{self.collection_name}' already exists")
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Error setting up collection: {e}")
             return False
