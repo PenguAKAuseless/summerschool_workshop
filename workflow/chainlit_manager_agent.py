@@ -48,8 +48,9 @@ async def start():
                        "• Tìm kiếm thông tin trên web\n"
                        "• Quản lý lịch học, lịch thi\n"
                        "• Gửi ticket hỗ trợ cho ban quản lý\n"
+                       "• Xử lý tài liệu (CSV, PDF, DOCX, JPG, PNG)\n"
                        "• Trò chuyện thông thường\n\n"
-                       "Hãy gửi tin nhắn để bắt đầu!",
+                       "Hãy gửi tin nhắn hoặc upload file để bắt đầu!",
                 author="System"
             ).send()
         except Exception as e:
@@ -111,7 +112,7 @@ async def start():
 
 @cl.on_message
 async def main(message: cl.Message):
-    """Handle incoming messages."""
+    """Handle incoming messages with optional file attachments."""
     global manager
     
     # Check if manager is properly initialized
@@ -132,24 +133,52 @@ async def main(message: cl.Message):
     user_id = cl.user_session.get("user_id") or "anonymous"
     user_message = message.content
     
+    # Check for file attachments
+    document_path = None
+    if message.elements:
+        for element in message.elements:
+            if hasattr(element, 'path') and element.path:
+                document_path = element.path
+                await cl.Message(
+                    content=f"📎 Đã nhận tài liệu: {element.name or os.path.basename(document_path)}",
+                    author="System"
+                ).send()
+                break
+    
     # Show typing indicator
-    async with cl.Step(name="🤔 Đang phân tích và xử lý...") as step:
+    step_name = "🤔 Đang phân tích và xử lý..."
+    if document_path:
+        step_name = "📄 Đang xử lý tài liệu và tin nhắn..."
+        
+    async with cl.Step(name=step_name) as step:
         try:
             # Check manager type and process message
             if not isinstance(manager, ManagerAgent):
                 raise Exception("ManagerAgent not properly initialized")
                 
-            # Process message with ManagerAgent
-            result = await manager.process_message(user_id, user_message)
+            # Process message with optional document
+            if document_path:
+                result = await manager.process_message_with_document(user_id, user_message, document_path)
+            else:
+                result = await manager.process_message(user_id, user_message)
             
             # Update step with classification info
             step.name = f"✅ Phân loại: {result['classification']['task_type'].upper()}"
-            step.output = (
+            
+            step_output = (
                 f"**Task Type**: {result['classification']['task_type']}\n"
                 f"**Confidence**: {result['classification']['confidence']:.2f}\n"
                 f"**Processing Time**: {result['metadata']['processing_time_seconds']:.2f}s\n"
                 f"**Chat History**: {result['metadata']['chat_history_length']} messages"
             )
+            
+            # Add document processing info if applicable
+            if document_path and result['metadata'].get('document_processed'):
+                step_output += f"\n**Document Processed**: ✅ {os.path.basename(document_path)}"
+            elif document_path:
+                step_output += f"\n**Document Processed**: ❌ Failed"
+                
+            step.output = step_output
             
         except Exception as e:
             step.name = "❌ Lỗi xử lý"
@@ -165,8 +194,10 @@ async def main(message: cl.Message):
                 error_msg += "🔑 **API Key Issue:** Check GEMINI_API_KEY\n"
             elif "timeout" in str(e).lower():
                 error_msg += "⏱️ **Timeout:** Try again in a moment\n"
+            elif "document" in str(e).lower() or "file" in str(e).lower():
+                error_msg += "� **Document Issue:** Check file format (CSV, PDF, DOCX, JPG, PNG supported)\n"
             else:
-                error_msg += "🔄 **Try:** Refresh page or restart chatbot\n"
+                error_msg += "�🔄 **Try:** Refresh page or restart chatbot\n"
             
             await cl.Message(
                 content=error_msg,
@@ -190,6 +221,9 @@ async def main(message: cl.Message):
             f"• User ID: {user_id}\n"
             f"• Processing time: {result['metadata']['processing_time_seconds']:.2f}s"
         )
+        
+        if result['metadata'].get('document_processed'):
+            debug_info += f"\n• Document: {result['metadata'].get('document_path', 'N/A')}"
         
         await cl.Message(
             content=debug_info,

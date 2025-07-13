@@ -83,6 +83,21 @@ from .summary_web import (
     summary_web
 )
 
+# Document Processing Tool
+from .document_processing_tool import (
+    DocumentContentOutput,
+    process_document_tool,
+    create_document_processing_tool,
+    extract_content_summary
+)
+
+# Image Reading Tool
+from .image_reading_tool import (
+    ImageContentOutput,
+    read_image_tool,
+    create_image_reading_tool
+)
+
 # Export all for easy import with *
 __all__ = [
     # Calculator Tool
@@ -148,5 +163,16 @@ __all__ = [
     # Parse Web Tool
     'ParseWebInput',
     'ParseWebOutput',
-    'summary_web'
+    'summary_web',
+
+    # Document Processing Tool
+    'DocumentContentOutput',
+    'process_document_tool',
+    'create_document_processing_tool',
+    'extract_content_summary',
+
+    # Image Reading Tool
+    'ImageContentOutput',
+    'read_image_tool',
+    'create_image_reading_tool'
 ]

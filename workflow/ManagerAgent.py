@@ -17,6 +17,7 @@ from workflow.specialists.QnAHandler import QnAHandlerAgent
 from workflow.specialists.SearchHandler import SearchHandlerAgent
 from workflow.specialists.CalendarHandler import CalendarHandlerAgent
 from workflow.specialists.TicketHandler import TicketHandlerAgent
+from utils.basetools import *
 
 
 class TaskType(Enum):
@@ -362,6 +363,11 @@ class ManagerAgent:
                 - Tìm kiếm thông tin trên web
                 - Quản lý lịch học, lịch thi
                 - Gửi ticket hỗ trợ cho ban quản lý
+                Nguyên tắc trả lời:
+                - KHÔNG TRẢ LỜI BẤT KỲ CÂU HỎI NÀO KHÔNG LIÊN QUAN TỚI TRƯỜNG ĐẠI HỌC BÁCH KHOA - ĐHQG-HCM VÀ KHÉO LÉO TỪ CHỐI
+                - Không tự suy luận, cung cấp nội dung không liên quan, ngoài ngữ cảnh.
+                - Trả lời ngắn gọn, chuẩn xác, rành mạch, khéo léo. Tập trung trả lời, không trích dẫn lại ngữ cảnh.
+                - Văn phong trang trọng, phù hợp môi trường học đường và hành chính công.
                 """,
                 tools=[]
             ).create_agent()
@@ -376,6 +382,150 @@ class ManagerAgent:
             self.logger.error(f"Error in general query handling: {e}")
             return "Xin chào! Tôi là trợ lý ảo của VNU-HCMUT. Tôi có thể giúp bạn trả lời câu hỏi về quy định trường, tìm kiếm thông tin, quản lý lịch học và gửi ticket hỗ trợ. Bạn cần tôi giúp gì?"
     
+    def process_document(self, file_path: str) -> str:
+        """
+        Process a document (CSV, PDF, DOCX, JPG, PNG, etc.) and extract its content.
+        
+        Args:
+            file_path: Path to the document file
+            
+        Returns:
+            Formatted string containing document content summary
+        """
+        try:
+            self.logger.info(f"Processing document: {file_path}")
+            
+            # Process the document using the universal tool
+            document_result = process_document_tool(file_path, extract_text_from_images=True)
+            
+            if not document_result.success:
+                return f"❌ Không thể xử lý tài liệu: {document_result.error_message}"
+            
+            # Generate formatted summary
+            content_summary = extract_content_summary(document_result)
+            
+            self.logger.info(f"Successfully processed document: {file_path}")
+            return content_summary
+            
+        except Exception as e:
+            self.logger.error(f"Error processing document {file_path}: {e}")
+            return f"❌ Lỗi xử lý tài liệu: {str(e)}"
+    
+    async def process_message_with_document(self, user_id: str, user_message: str, document_path: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Process user message with optional document attachment.
+        
+        Args:
+            user_id: Unique identifier for the user
+            user_message: The user's message
+            document_path: Optional path to attached document
+            
+        Returns:
+            Dictionary containing response and metadata
+        """
+        start_time = datetime.now()
+        
+        try:
+            # Process document if provided
+            document_content = ""
+            if document_path and os.path.exists(document_path):
+                document_content = self.process_document(document_path)
+                self.logger.info(f"Document processed for user {user_id}: {document_path}")
+            
+            # Enhance user message with document content if available
+            enhanced_message = user_message
+            if document_content:
+                enhanced_message = f"""
+{user_message}
+
+=== TÀI LIỆU ĐÍNH KÈM ===
+{document_content}
+
+Hãy phân tích và trả lời dựa trên cả tin nhắn và nội dung tài liệu đính kèm ở trên.
+"""
+            
+            # Store enhanced user message
+            user_msg = ChatMessage(
+                user_id=user_id,
+                message=enhanced_message,
+                timestamp=start_time,
+                message_type="user"
+            )
+            self._store_message(user_id, user_msg)
+            
+            # Get chat history
+            chat_history = self._get_chat_history(user_id)
+            
+            # Classify the task (using enhanced message)
+            classification = await self.classify_task(enhanced_message, chat_history)
+            
+            # Route to appropriate specialist
+            response = await self.route_to_specialist(
+                classification.task_type,
+                enhanced_message,
+                chat_history
+            )
+            
+            # Store assistant response
+            assistant_msg = ChatMessage(
+                user_id=user_id,
+                message=response,
+                timestamp=datetime.now(),
+                message_type="assistant"
+            )
+            self._store_message(user_id, assistant_msg)
+            
+            processing_time = (datetime.now() - start_time).total_seconds()
+            
+            return {
+                "response": response,
+                "classification": {
+                    "task_type": classification.task_type.value,
+                    "confidence": classification.confidence,
+                    "reasoning": classification.reasoning
+                },
+                "metadata": {
+                    "user_id": user_id,
+                    "timestamp": start_time.isoformat(),
+                    "processing_time_seconds": processing_time,
+                    "chat_history_length": len(chat_history),
+                    "document_processed": document_path is not None and os.path.exists(document_path) if document_path else False,
+                    "document_path": document_path if document_path else None
+                }
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error processing message with document: {e}")
+            error_response = f"Xin lỗi, đã có lỗi xảy ra: {e}"
+            
+            # Still try to store error response
+            try:
+                error_msg = ChatMessage(
+                    user_id=user_id,
+                    message=error_response,
+                    timestamp=datetime.now(),
+                    message_type="assistant"
+                )
+                self._store_message(user_id, error_msg)
+            except:
+                pass
+            
+            return {
+                "response": error_response,
+                "classification": {
+                    "task_type": "error",
+                    "confidence": 0.0,
+                    "reasoning": str(e)
+                },
+                "metadata": {
+                    "user_id": user_id,
+                    "timestamp": start_time.isoformat(),
+                    "processing_time_seconds": (datetime.now() - start_time).total_seconds(),
+                    "error": True,
+                    "document_processed": False
+                }
+            }
+
     async def process_message(self, user_id: str, user_message: str) -> Dict[str, Any]:
         """
         Main method to process user messages.

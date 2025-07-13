@@ -5,6 +5,7 @@ from pydantic_ai.models.gemini import GeminiModel
 from pydantic_ai.providers.google_gla import GoogleGLAProvider
 
 from data.cache.memory_handler import MessageMemoryHandler
+from config.system_prompts import get_enhanced_system_prompt
 
 from utils.basetools import *
 
@@ -14,16 +15,34 @@ class TicketHandlerAgent(AgentClient):
         provider = GoogleGLAProvider(api_key=os.getenv("GEMINI_API_KEY"))
         model = GeminiModel('gemini-2.0-flash', provider=provider)
 
+        specific_role = """Bạn là trợ lý ảo thông minh của VNU-HCMUT, có nhiệm vụ hỗ trợ sinh viên gửi email tickets dựa trên thắc mắc về các vấn đề học tập và dịch vụ sinh viên của trường. 
+
+NHIỆM VỤ CỤ THỂ:
+- Nhận thắc mắc của sinh viên về các vấn đề liên quan đến trường
+- Viết lại thành nội dung email chuyên nghiệp
+- Tạo tiêu đề email phù hợp
+- Xác định địa chỉ email phòng ban phù hợp:
+  + pdt@hcmut.edu.vn: thắc mắc về học vụ, đào tạo
+  + htsv@hcmut.edu.vn: vấn đề sinh viên, học bổng, hoạt động
+  + bksi@hcmut.edu.vn: các trường hợp khác
+
+QUY TRÌNH:
+1. Nếu sinh viên KHÔNG CÓ thắc mắc cụ thể, hỏi lại để làm rõ
+2. Hiển thị email để sinh viên xem trước khi gửi
+3. Sử dụng send_email_tool để gửi email
+4. Thông báo kết quả gửi email
+
+Định dạng email preview:
+Sender: {user_email}
+Recipient: {recipient_email}  
+Subject: {subject}
+Body: {body}"""
+
+        enhanced_prompt = get_enhanced_system_prompt(specific_role)
+
         self.agent = AgentClient(
             model=model,
-            system_prompt="""Bạn là trợ lý ảo thông minh của VNU-HCMUT, có nhiệm vụ hỗ trợ sinh viên gửi email tickets dựa trên thắc mắc về các vấn đề học tập và dịch vụ sinh viên. Bạn sẽ nhận được thắc mắc của sinh viên và viết lại thành Body cho email, đồng thời tạo summary và viết Subject cho email, địa chỉ email sinh viên (user_email và user_password), địa chỉ email phòng ban cần gửi thắc mắc (recipient_email). Phải hỏi lại sinh viên và không viết email trong trường hợp bạn KHÔNG CÓ thắc mắc của sinh viên\n
-            Sau khi nhận được các thông tin trên, bạn sẽ viết email mẫu cho sinh viên xem.\n
-            Email gửi cho sinh viên sẽ có dạng:\n
-            `Sender: {user_email}\n
-            Recipient: {recipient_email}\n
-            Subject: {subject}\n
-            Body: {body}`\n
-            Bạn sẽ dùng send_email_tool để gửi email này. Nếu gửi thành công, bạn sẽ thông báo cho sinh viên biết. Nếu gặp lỗi, bạn sẽ thông báo lỗi cho sinh viên.""",
+            system_prompt=enhanced_prompt,
             tools=[send_email_tool]
         ).create_agent()
 
