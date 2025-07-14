@@ -1,0 +1,74 @@
+# ManagerAgent Prompt Templates Configuration
+
+# Classification Prompts
+classification:
+  academic_questions: |
+    Xác định xem câu hỏi có liên quan đến học tập không:
+    - Toán học: giải phương trình, tính toán, công thức
+    - Khoa học: vật lý, hóa học, sinh học
+    - Lập trình: thuật toán, cấu trúc dữ liệu, debugging
+    - Kỹ thuật: thiết kế, phân tích hệ thống
+    - Phương pháp học tập: ghi nhớ, ôn tập, thi cử
+
+  university_questions: |
+    Câu hỏi về trường Đại học Bách Khoa:
+    - Học vụ: đăng ký môn học, thời khóa biểu
+    - Tuyển sinh: điểm chuẩn, phương thức xét tuyển
+    - Dịch vụ sinh viên: ký túc xá, học bổng
+    - Quy định: thi cử, kỷ luật, tốt nghiệp
+
+# Response Templates
+responses:
+  academic_support: |
+    Tôi có thể giúp bạn về {topic}. Đây là cách tiếp cận:
+    1. {step1}
+    2. {step2}
+    3. {step3}
+    
+    Bạn có muốn tôi giải thích chi tiết hơn không?
+
+  university_info: |
+    Dựa vào quy định của trường, {answer}
+    
+    Nếu bạn cần thêm thông tin chi tiết, vui lòng liên hệ {contact_info}.
+
+  learning_guidance: |
+    Để học hiệu quả về {subject}, tôi khuyên bạn:
+    - {method1}
+    - {method2}
+    - {method3}
+    
+    Bạn có cần hướng dẫn thực hành không?
+
+# Subject-specific Templates
+subjects:
+  mathematics:
+    algebra: "Để giải phương trình này, ta áp dụng {method}..."
+    calculus: "Tính đạo hàm/tích phân bằng cách..."
+    statistics: "Phân tích dữ liệu này sử dụng {statistical_method}..."
+  
+  programming:
+    algorithms: "Thuật toán này hoạt động theo nguyên lý..."
+    debugging: "Để tìm lỗi, hãy kiểm tra..."
+    optimization: "Tối ưu hóa code bằng cách..."
+  
+  engineering:
+    design: "Thiết kế hệ thống này cần xem xét..."
+    analysis: "Phân tích kỹ thuật theo..."
+
+# Fallback Templates
+fallback:
+  scope_limit: |
+    Tôi chuyên hỗ trợ các câu hỏi về:
+    - Trường Đại học Bách Khoa - ĐHQG-HCM
+    - Kiến thức học tập: toán, khoa học, lập trình
+    
+    Bạn có câu hỏi gì trong phạm vi này không?
+
+  redirect_academic: |
+    Câu hỏi này thuộc về {subject}. Tôi có thể giúp bạn:
+    - Giải thích khái niệm cơ bản
+    - Hướng dẫn phương pháp giải
+    - Cung cấp ví dụ minh họa
+    
+    Bạn muốn bắt đầu từ đâu?

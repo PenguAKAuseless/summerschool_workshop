@@ -55,7 +55,7 @@ REDIS_DB=0
 
 # Milvus Configuration (optional)
 MILVUS_URI=http://localhost:19530
-MILVUS_COLLECTION=vnu_hcmut_faq
+MILVUS_COLLECTION=academic_support_qa
 
 # Optional settings
 MAX_CHAT_HISTORY=20

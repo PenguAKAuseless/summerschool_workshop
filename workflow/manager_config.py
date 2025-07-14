@@ -19,7 +19,7 @@ class ManagerAgentConfig:
     max_chat_history: int = 20
     
     # Milvus Configuration
-    collection_name: str = "vnu_hcmut_faq"
+    collection_name: str = "academic_support_qa"
     milvus_uri: Optional[str] = None
     milvus_token: Optional[str] = None
     
@@ -60,7 +60,7 @@ class ManagerAgentConfig:
             max_chat_history=int(os.getenv("MAX_CHAT_HISTORY", "20")),
             
             # Milvus
-            collection_name=os.getenv("MILVUS_COLLECTION", "vnu_hcmut_faq"),
+            collection_name=os.getenv("MILVUS_COLLECTION", "academic_support_qa"),
             milvus_uri=os.getenv("MILVUS_URI"),
             milvus_token=os.getenv("MILVUS_TOKEN"),
             
@@ -156,7 +156,7 @@ REDIS_DB=0
 MAX_CHAT_HISTORY=20
 
 # Milvus Configuration
-MILVUS_COLLECTION=vnu_hcmut_faq
+MILVUS_COLLECTION=academic_support_qa
 MILVUS_URI=http://localhost:19530
 # MILVUS_TOKEN=your_milvus_token  # Uncomment if needed
 

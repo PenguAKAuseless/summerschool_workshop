@@ -93,20 +93,33 @@ redis-cli ping
 
 Your ManagerAgent can handle:
 
-1. **🤔 QnA**: Questions about university policies, student services, FAQ
+1. **🤔 QnA**: Questions about university policies, student services, FAQ, and academic learning
    - *"Các phương thức tuyển sinh của trường bao gồm?"*
+   - *"Làm thế nào để giải phương trình bậc 2?"*
+   - *"Giải thích thuật toán quicksort"*
 
 2. **🔍 Search**: Web search and research
    - *"Tìm kiếm thông tin về đào tạo vi mạch mới nhất"*
 
-3. **📅 Calendar**: Schedule management
+3. **📅 Calendar**: Schedule management AND Google Calendar coding
    - *"Đặt lịch họp team đồ án vào thứ 2 tuần sau"*
+   - *"Viết code Python để import lịch học vào Google Calendar"* **[NEW]**
+   - *"Làm thế nào để setup Google Calendar API?"* **[NEW]**
+   - *"Script automation sync lịch thi từ Excel"* **[NEW]**
 
 4. **🎫 Ticket**: Support requests
    - *"Hệ thống mybk App bị lỗi, cần hỗ trợ kỹ thuật"*
 
-5. **💬 General**: Normal conversation
+5. **💬 General**: Normal conversation (academic focus)
    - *"Chào bạn, hôm nay thế nào?"*
+
+### ✨ NEW: Google Calendar Coding Assistant
+The Calendar handler can now write complete Python code for:
+- 📤 **CSV to Google Calendar import**
+- 🔐 **Google API authentication setup** 
+- 🤖 **Automation scripts for schedule sync**
+- 🛠️ **Error handling and troubleshooting**
+- 📊 **Bulk calendar operations**
 
 ---
 

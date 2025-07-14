@@ -154,11 +154,21 @@ class ManagerAgent:
         Bạn là một AI chuyên phân loại task. Nhiệm vụ của bạn là phân tích tin nhắn của người dùng và xác định loại task phù hợp nhất.
         
         Các loại task có thể xử lý:
-        1. QNA: Câu hỏi về quy định, chính sách, FAQ của VNU-HCMUT, thông tin sinh viên
+        1. QNA: 
+           - Câu hỏi về quy định, chính sách, FAQ của VNU-HCMUT, thông tin sinh viên
+           - Câu hỏi học tập tổng quát: toán học, khoa học, lập trình, kỹ thuật
+           - Hướng dẫn giải bài tập, giải thích khái niệm học thuật
+           - Phương pháp học tập và nghiên cứu
         2. SEARCH: Tìm kiếm thông tin trên web, nghiên cứu chủ đề
-        3. CALENDAR: Quản lý lịch học, lịch thi, sự kiện của trường
+        3. CALENDAR: 
+           - Quản lý lịch học, lịch thi, sự kiện của trường
+           - Kế hoạch học tập, ôn tập
+           - Tạo file CSV cho Google Calendar
+           - Viết code Python để upload lịch học vào Google Calendar
+           - Hướng dẫn thiết lập Google Calendar API
+           - Script automation cho quản lý lịch
         4. TICKET: Gửi ticket, email hỗ trợ, báo cáo vấn đề cho ban quản lý
-        5. GENERAL: Các câu hỏi chung, trò chuyện thông thường
+        5. GENERAL: Các câu hỏi chung, trò chuyện thông thường (không liên quan học tập)
         
         Phân tích tin nhắn và trả về:
         - task_type: loại task (qna/search/calendar/ticket/general)
@@ -167,8 +177,15 @@ class ManagerAgent:
         
         Ví dụ tin nhắn và phân loại:
         - "Quy định về đăng ký học phần của trường như thế nào?" → QNA
+        - "Làm thế nào để giải phương trình bậc 2?" → QNA
+        - "Tính đạo hàm của hàm số sin(x)" → QNA
+        - "Giải thích thuật toán sắp xếp nhanh" → QNA
         - "Tìm kiếm thông tin về AI mới nhất" → SEARCH
         - "Lịch thi cuối kỳ khi nào?" → CALENDAR
+        - "Lên kế hoạch ôn tập cho kỳ thi/ môn học" → CALENDAR
+        - "Viết code để import lịch học vào Google Calendar" → CALENDAR
+        - "Làm thế nào để setup Google Calendar API?" → CALENDAR
+        - "Tạo script backup lịch học hàng tuần" → CALENDAR
         - "Hệ thống LMS bị lỗi, cần hỗ trợ" → TICKET
         - "Chào bạn, hôm nay thế nào?" → GENERAL
         """
@@ -267,6 +284,120 @@ class ManagerAgent:
             # This is a simplified parsing - in practice, you might want more robust parsing
             response_text = str(response.output if hasattr(response, 'output') else response).lower()
             
+            # More robust parsing with multiple criteria
+            task_scores = {
+                TaskType.QNA: 0,
+                TaskType.SEARCH: 0,
+                TaskType.CALENDAR: 0,
+                TaskType.TICKET: 0,
+                TaskType.GENERAL: 0
+            }
+            
+            # QNA keywords and patterns
+            qna_patterns = [
+                'qna', 'faq', 'q&a', 'hỏi đáp',
+                'quy định', 'chính sách', 'luật', 'điều lệ',
+                'vnu', 'hcmut', 'trường', 'đại học',
+                'sinh viên', 'giáo dục', 'khoa học', 'lập trình', 'kỹ thuật',
+                'bài tập', 'giải thích', 'hướng dẫn',
+                'phương pháp', 'nghiên cứu', 'học thuật',
+                'kiến thức', 'giải bài', 'công thức'
+            ]
+            
+            # SEARCH keywords
+            search_patterns = [
+                'search', 'tìm kiếm', 'tìm', 'kiếm',
+                'web', 'internet', 'google', 'nghiên cứu',
+                'thông tin mới', 'cập nhật', 'tin tức',
+                'xu hướng', 'phát triển', 'công nghệ mới'
+            ]
+            
+            # CALENDAR keywords
+            calendar_patterns = [
+                'calendar', 'lịch', 'thời gian', 'ngày',
+                'lịch học', 'lịch thi', 'thời khóa biểu',
+                'sự kiện', 'cuộc họp', 'deadline',
+                'kế hoạch', 'ôn tập', 'lịch trình',
+                'học kỳ', 'kỳ thi', 'đăng ký',
+                'học tập', 'học', 'giảng', 'bài', 'môn', 'khóa', 'tín chí'
+            ]
+            
+            # TICKET keywords
+            ticket_patterns = [
+                'ticket', 'email', 'gửi', 'báo cáo',
+                'hỗ trợ', 'trợ giúp', 'vấn đề', 'lỗi',
+                'khiếu nại', 'phản ánh', 'yêu cầu',
+                'ban quản lý', 'phòng đào tạo', 'hệ thống'
+            ]
+            
+            # GENERAL keywords
+            general_patterns = [
+                'general', 'chung', 'thông thường',
+                'chào', 'xin chào', 'hello', 'hi',
+                'cảm ơn', 'thank', 'bye', 'tạm biệt',
+                'trò chuyện', 'chat', 'nói chuyện'
+            ]
+            
+            # Count matches for each category
+            for pattern in qna_patterns:
+                if pattern in response_text or pattern in user_message.lower():
+                    task_scores[TaskType.QNA] += 1
+            
+            for pattern in search_patterns:
+                if pattern in response_text or pattern in user_message.lower():
+                    task_scores[TaskType.SEARCH] += 1
+            
+            for pattern in calendar_patterns:
+                if pattern in response_text or pattern in user_message.lower():
+                    task_scores[TaskType.CALENDAR] += 1
+            
+            for pattern in ticket_patterns:
+                if pattern in response_text or pattern in user_message.lower():
+                    task_scores[TaskType.TICKET] += 1
+            
+            for pattern in general_patterns:
+                if pattern in response_text or pattern in user_message.lower():
+                    task_scores[TaskType.GENERAL] += 1
+            
+            # Additional context-based scoring
+            # Educational content gets CALENDAR boost (moved from QNA)
+            educational_keywords = ['học', 'giảng', 'bài', 'môn', 'khóa', 'tín chí']
+            if any(keyword in user_message.lower() for keyword in educational_keywords):
+                task_scores[TaskType.CALENDAR] += 3
+            
+            # Questions about regulations/policies get QNA boost
+            regulation_keywords = ['quy định', 'chính sách', 'thủ tục', 'hồ sơ']
+            if any(keyword in user_message.lower() for keyword in regulation_keywords):
+                task_scores[TaskType.QNA] += 3
+            
+            # Time-related queries get CALENDAR boost
+            time_keywords = ['khi nào', 'bao giờ', 'thời gian', 'ngày nào']
+            if any(keyword in user_message.lower() for keyword in time_keywords):
+                task_scores[TaskType.CALENDAR] += 2
+            
+            # Problem/issue reports get TICKET boost
+            problem_keywords = ['bị lỗi', 'không hoạt động', 'sự cố', 'báo cáo']
+            if any(keyword in user_message.lower() for keyword in problem_keywords):
+                task_scores[TaskType.TICKET] += 3
+            
+            # Determine best match
+            best_task = max(task_scores.keys(), key=lambda k: task_scores[k])
+            max_score = task_scores[best_task]
+            
+            # Calculate confidence based on score
+            if max_score >= 3:
+                confidence = 0.9
+            elif max_score >= 2:
+                confidence = 0.8
+            elif max_score >= 1:
+                confidence = 0.7
+            else:
+                # Default to QNA for educational institution context
+                best_task = TaskType.QNA
+                confidence = 0.6
+            
+            task_type = best_task
+            
             # Determine task type based on keywords in response
             if any(keyword in response_text for keyword in ['qna', 'faq', 'quy định', 'chính sách', 'vnu', 'hcmut', 'trường']):
                 task_type = TaskType.QNA
@@ -274,7 +405,7 @@ class ManagerAgent:
             elif any(keyword in response_text for keyword in ['search', 'tìm kiếm', 'nghiên cứu']):
                 task_type = TaskType.SEARCH
                 confidence = 0.8
-            elif any(keyword in response_text for keyword in ['calendar', 'lịch', 'lịch học', 'lịch thi', 'sự kiện', 'thời khóa biểu']):
+            elif any(keyword in response_text for keyword in ['calendar', 'lịch', 'lịch học', 'lịch thi', 'sự kiện', 'thời khóa biểu', 'kế hoạch', 'ôn tập']):
                 task_type = TaskType.CALENDAR
                 confidence = 0.8
             elif any(keyword in response_text for keyword in ['ticket', 'email', 'hỗ trợ', 'báo cáo']):
@@ -356,18 +487,28 @@ class ManagerAgent:
             
             general_agent = AgentClient(
                 model=model,
-                system_prompt="""Bạn là trợ lý ảo thông minh và thân thiện. 
-                Hãy trò chuyện một cách tự nhiên và hữu ích với sinh viên VNU-HCMUT.
-                Nếu họ hỏi về chức năng, hãy giải thích bạn có thể giúp:
-                - Trả lời câu hỏi về quy định, chính sách của trường (QnA)
-                - Tìm kiếm thông tin trên web
-                - Quản lý lịch học, lịch thi
-                - Gửi ticket hỗ trợ cho ban quản lý
-                Nguyên tắc trả lời:
-                - KHÔNG TRẢ LỜI BẤT KỲ CÂU HỎI NÀO KHÔNG LIÊN QUAN TỚI TRƯỜNG ĐẠI HỌC BÁCH KHOA - ĐHQG-HCM VÀ KHÉO LÉO TỪ CHỐI
-                - Không tự suy luận, cung cấp nội dung không liên quan, ngoài ngữ cảnh.
-                - Trả lời ngắn gọn, chuẩn xác, rành mạch, khéo léo. Tập trung trả lời, không trích dẫn lại ngữ cảnh.
-                - Văn phong trang trọng, phù hợp môi trường học đường và hành chính công.
+                system_prompt="""Bạn là trợ lý ảo thông minh và thân thiện của VNU-HCMUT. 
+                
+                KHẢ NĂNG HỖ TRỢ:
+                1. Các vấn đề về trường Đại học Bách Khoa - ĐHQG-HCM:
+                   - Quy định, chính sách của trường (QnA)
+                   - Tìm kiếm thông tin trên web
+                   - Quản lý lịch học, lịch thi
+                   - Gửi ticket hỗ trợ cho ban quản lý
+                
+                2. Các câu hỏi học tập tổng quát:
+                   - Kiến thức toán học, khoa học, công nghệ
+                   - Phương pháp học tập và nghiên cứu
+                   - Hướng dẫn giải bài tập
+                   - Giải thích khái niệm học thuật
+                   - Lập trình và kỹ thuật
+                
+                NGUYÊN TẮC TRẢ LỜI:
+                - Ưu tiên trả lời các câu hỏi liên quan đến trường và học tập
+                - Từ chối lịch sự các chủ đề không phù hợp (giải trí, tin tức, ...)
+                - Trả lời ngắn gọn, chuẩn xác, rành mạch
+                - Văn phong trang trọng, phù hợp môi trường học đường
+                - Khuyến khích sinh viên đặt câu hỏi học thuật và về trường
                 """,
                 tools=[]
             ).create_agent()
